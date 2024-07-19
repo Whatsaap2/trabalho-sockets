@@ -1,0 +1,102 @@
+import socket
+import struct
+import binascii
+
+def decimal_to_ieee754(num):
+    packed = struct.pack('!f', num)
+    bits = ''.join(f'{c:08b}' for c in packed)
+    hex_representation = binascii.hexlify(packed).decode('utf-8')
+    return bits, hex_representation
+
+def convert_base(number, from_base, to_base):
+    if from_base != 10:
+        number = int(number, from_base)
+    if to_base == 10:
+        return str(number)
+    else:
+        chars = "0123456789ABCDEF"
+        result = ""
+        while number > 0:
+            result = chars[number % to_base] + result
+            number = number // to_base
+        return result
+
+def complement_2(number, bits=8):
+    num = int(number, 2)
+    max_num = 2 ** bits
+    if num >= max_num // 2:
+        num = num - max_num
+    return num
+
+def int_to_twos_complement(n, bits=8):
+    if n < 0:
+        n = (1 << bits) + n
+    format_string = '{:0%db}' % bits
+    return format_string.format(n)
+
+def twos_complement_sum(a, b, bits=8):
+    result = int(a, 2) + int(b, 2)
+    result = result & ((1 << bits) - 1)  # Apply mask to keep within bit limit
+    return int_to_twos_complement(result - (1 << bits) if result >= (1 << (bits - 1)) else result, bits)
+
+def twos_complement_subtract(a, b, bits=8):
+    result = int(a, 2) - int(b, 2)
+    result = result & ((1 << bits) - 1)  # Apply mask to keep within bit limit
+    return int_to_twos_complement(result - (1 << bits) if result >= (1 << (bits - 1)) else result, bits)
+
+def twos_complement_divide(a, b, bits=8):
+    a = complement_2(a, bits)
+    b = complement_2(b, bits)
+    if b == 0:
+        return "Division by zero error"
+    result = a // b
+    return int_to_twos_complement(result, bits)
+
+def handle_client(client_socket):
+    try:
+        while True:
+            request = client_socket.recv(1024).decode('utf-8').strip()
+            if not request:
+                break
+            parts = request.split()
+            if parts[0] == "convert_base":
+                _, number, from_base, to_base = parts
+                result = convert_base(number, int(from_base), int(to_base))
+            elif parts[0] == "complement_2":
+                _, number, bits = parts
+                result = str(complement_2(number, int(bits)))
+            elif parts[0] == "ieee754":
+                _, number = parts
+                bits, hex_representation = decimal_to_ieee754(float(number))
+                result = f"Bits: {bits}\nHex: {hex_representation}"
+            elif parts[0] == "sum":
+                _, a, b, bits = parts
+                result = twos_complement_sum(a, b, int(bits))
+            elif parts[0] == "subtract":
+                _, a, b, bits = parts
+                result = twos_complement_subtract(a, b, int(bits))
+            elif parts[0] == "divide":
+                _, a, b, bits = parts
+                result = twos_complement_divide(a, b, int(bits))
+            else:
+                result = "Invalid command"
+
+            client_socket.send(result.encode('utf-8'))
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client_socket.close()
+
+def main():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(('0.0.0.0', 9999))
+    server.listen(5)
+    print("Server listening on port 9999")
+
+    while True:
+        client_socket, addr = server.accept()
+        print(f"Accepted connection from {addr}")
+        handle_client(client_socket)
+
+if __name__ == "__main__":
+    main()
