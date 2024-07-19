@@ -1,0 +1,28 @@
+import socket
+
+def main():
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('127.0.0.1', 9999))
+
+    print("Enter commands in the format:")
+    print("convert_base <number> <from_base> <to_base>")
+    print("complement_2 <binary_number> <bits>")
+    print("ieee754 <decimal_number>")
+    print("sum <binary_number1> <binary_number2> <bits>")
+    print("subtract <binary_number1> <binary_number2> <bits>")
+    print("divide <binary_number1> <binary_number2> <bits>")
+    print("word_utf8 <word>")
+    
+    while True:
+        command = input("Enter command: ")
+        if command.lower() in ['exit', 'quit']:
+            break
+        
+        client.send(command.encode('utf-8'))
+        response = client.recv(4096).decode('utf-8')
+        print(response)
+
+    client.close()
+
+if __name__ == "__main__":
+    main()
