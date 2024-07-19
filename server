@@ -9,8 +9,8 @@ def convert_base(value, from_base, to_base):
 
     Args:
     - value (str): O valor a ser convertido.
-    - from_base (int): A base de origem do valor (2, 10, 16).
-    - to_base (int): A base de destino para a conversão (2, 10, 16).
+    - from_base (int): A base de origem do valor (2, 8, 10, 16).
+    - to_base (int): A base de destino para a conversão (2, 8, 10, 16).
 
     Returns:
     - str: O valor convertido na base de destino.
@@ -22,7 +22,9 @@ def convert_base(value, from_base, to_base):
             value = int(value, 16)
         elif from_base == 2:
             value = int(value, 2)
-        return format(value, {2: 'b', 10: 'd', 16: 'x'}[to_base])
+	elif from_base == 8:
+            value = int(value, 8)
+	return format(value, {2: 'b', 8: 'o', 10: 'd', 16: 'x'}[to_base])
     except ValueError:
         return "Error: Valor inválido"
 
