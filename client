@@ -1,0 +1,109 @@
+import socket
+import os
+
+def save_svg_image(svg_data, save_path):
+    """
+    Salva dados SVG em um arquivo.
+
+    Parâmetros:
+    - svg_data (bytes): Os dados da imagem SVG.
+    - save_path (str): O caminho onde o arquivo SVG será salvo.
+    """
+    with open(save_path, 'wb') as f:
+        f.write(svg_data)
+    print(f"SVG image saved to: {save_path}")
+
+def main():
+    """
+    Função principal que se conecta ao servidor e envia comandos baseados na entrada do usuário.
+    """
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 65432))
+    
+    while True:
+        print("\n""Questões disponíveis:")
+        print("1 - Conversão de bases")
+        print("2 - Soma ou subtração em complemento a 2 (8 bits)")
+        print("3 - Divisão em complemento a 2 (8 bits)")
+        print("4 - Conversão para IEEE 754 precisão simples")
+        print("5 - Conversão de string para hex e code points")
+        print("6 - Gera imagem de um circuito")
+        
+        question = input("\n""Digite o número da questão (1-6) ou 'exit' para sair: ").strip()
+        
+        if question == 'exit':
+            break
+        
+        if question not in ['1', '2', '3', '4', '5', '6']:
+            print("\n""Questão inválida. Por favor, digite um número de questão válido (1-6) ou 'exit' para sair.")
+            continue
+        
+        try:
+            if question == '1':
+                print("\n""Questão 1 - Conversão de bases")
+                value = input("Digite o valor: ").strip()
+                from_base = int(input("Digite a base de origem (2, 10, 16): ").strip())
+                to_base = int(input("Digite a base de destino (2, 10, 16): ").strip())
+                message = f"{question},{value},{from_base},{to_base}"
+            
+            elif question == '2':
+                print("\n""Questão 2 - Soma ou subtração em complemento a 2 (8 bits)")
+                a = input("Digite o primeiro número binário de 8 bits: ").strip()
+                b = input("Digite o segundo número binário de 8 bits: ").strip()
+                operation = input("Digite a operação (add/subtract): ").strip().lower()
+                if operation not in ['add', 'subtract']:
+                    print("Operação inválida. Digite 'add' para adição ou 'subtract' para subtração.")
+                    continue
+                message = f"{question},{a},{b},{operation}"
+            
+            elif question == '3':
+                print("\n""Questão 3 - Divisão em complemento a 2 (8 bits)")
+                a = input("Digite o dividendo (número binário de 8 bits): ").strip()
+                b = input("Digite o divisor (número binário de 8 bits): ").strip()
+                message = f"{question},{a},{b}"
+            
+            elif question == '4':
+                print("\n""Questão 4 - Conversão para IEEE 754 precisão simples")
+                value = input("Digite o valor em ponto flutuante: ").strip()
+                message = f"{question},{value}"
+            
+            elif question == '5':
+                print("\n""Questão 5 - Conversão de string para hex e code points")
+                value = input("Digite uma string: ").strip()
+                message = f"{question},{value}"
+            
+            elif question == "6":
+                print("\n""Questão 6 - Gera imagem de um circuito")
+                circuit_desc = input("Descreva o circuito: ").strip()
+                message = f"{question},{circuit_desc}"
+                client_socket.send(message.encode())
+                            
+                # Receber dados da imagem SVG do servidor
+                svg_data = b''
+                while True:
+                    chunk = client_socket.recv(1024)
+                    if not chunk:
+                        break
+                    svg_data += chunk
+                
+                # Salvar a imagem SVG localmente
+                downloads_directory = os.path.join(os.environ.get('USERPROFILE', os.environ['HOME']), 'Downloads')
+                save_path = os.path.join(downloads_directory, "output_circuit.svg")
+                save_svg_image(svg_data, save_path)
+                
+                print(f"Imagem do circuito salva em: {save_path}")
+                continue
+            
+            client_socket.send(message.encode())
+            response = client_socket.recv(1024).decode()
+            print(f"Resposta do servidor: {response}")
+        
+        except ValueError as e:
+            print(f"Erro: Entrada inválida. {e}")
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+    
+    client_socket.close()
+
+if __name__ == "__main__":
+    main()
